@@ -1,0 +1,21 @@
+dataset_name,strategy,mean_score,std_score,compute_time
+colleges,BERT encoding : only value last four hidden state concatenate,0.4479654200536783,0.16517541693757135,0 days 00:13:34.658564
+colleges,BERT encoding : value and column last four hidden state concatenate,0.4441757058449884,0.1899760111421469,0 days 00:25:07.134472
+colleges,BERT encoding : value and column last hidden state,0.448005485667794,0.1793416896690728,0 days 00:23:32.048483
+colleges,SuperVectorizer,0.472641980597428,0.1642301696089242,0 days 00:01:08.211044
+employee_salaries,BERT encoding : only value last four hidden state concatenate,0.8489575161513253,0.014184673504043139,0 days 00:10:08.804924
+employee_salaries,BERT encoding : value and column last four hidden state concatenate,0.8372100300914658,0.01275194357488673,0 days 00:14:24.270617
+employee_salaries,BERT encoding : value and column last hidden state,0.8303304462597995,0.006098917853464361,0 days 00:12:07.024372
+employee_salaries,SuperVectorizer,0.9177488694065719,0.016091438251028288,0 days 00:00:16.969568
+journal_influence,BERT encoding : only value last four hidden state concatenate,0.9628465956541932,0.0347997959588551,0 days 00:02:52.836152
+journal_influence,BERT encoding : value and column last four hidden state concatenate,0.9635753063540978,0.033286344687646595,0 days 00:03:12.977820
+journal_influence,BERT encoding : value and column last hidden state,0.9622674566708092,0.0327072811860684,0 days 00:02:16.127327
+journal_influence,SuperVectorizer,0.9651094733213819,0.02791240823917754,0 days 00:00:13.777842
+midwest_survey,BERT encoding : only value last four hidden state concatenate,0.7245511102526339,0.01622386844299404,0 days 00:09:20.802185
+midwest_survey,BERT encoding : value and column last four hidden state concatenate,0.7798866809925071,0.020039198973441297,0 days 00:11:12.621583
+midwest_survey,BERT encoding : value and column last hidden state,0.7698618119773684,0.020785654119048223,0 days 00:07:07.710079
+midwest_survey,SuperVectorizer,0.7782786456447031,0.019633804790243844,0 days 00:00:14.841967
+vancouver_employee,BERT encoding : only value last four hidden state concatenate,0.6414364035911139,0.08706581001374407,0 days 00:15:06.685306
+vancouver_employee,BERT encoding : value and column last four hidden state concatenate,0.6479661769440558,0.08810948576420377,0 days 00:16:27.763659
+vancouver_employee,BERT encoding : value and column last hidden state,0.63185120289365,0.08059593727072972,0 days 00:11:40.006863
+vancouver_employee,SuperVectorizer,0.6874427382580616,0.08275167655857694,0 days 00:01:06.822140

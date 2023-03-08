@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 
-from dirty_cat import datasets, SuperVectorizer
+from dirty_cat import datasets, TableVectorizer
 from sklearn.pipeline import make_pipeline
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.ensemble import HistGradientBoostingRegressor
@@ -9,12 +9,12 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 def get_pipeline(target_type):
     if target_type == 'object':
         pipeline = make_pipeline(
-            SuperVectorizer(auto_cast=True),
+            TableVectorizer(auto_cast=True),
             HistGradientBoostingClassifier()
         )
     else:
         pipeline = make_pipeline(
-            SuperVectorizer(auto_cast=True),
+            TableVectorizer(auto_cast=True),
             HistGradientBoostingRegressor()
         )
     return pipeline

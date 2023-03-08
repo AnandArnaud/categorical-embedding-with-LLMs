@@ -2,13 +2,17 @@ import pandas as pd
 import numpy as np
 import torch
 import transformers
+import time
+import datetime
+import os
 
 from transformers import BertConfig, BertModel, AutoTokenizer
 from sklearn.model_selection import cross_val_score
+from tqdm import tqdm
 
 from functions.utils import get_pipeline, get_scoring
 
-TOKENIZERS_PARALLELISM = False 
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 def initialize_bert(model_name="bert-base-uncased"):
     """
@@ -105,18 +109,27 @@ def convert_sentences_to_bert_input(sentences, tokenizer, max_length):
         raise ValueError("Sentences argument must not be empty")
 
     # Encode the sentences
-    encoded_dicts = [tokenizer.encode_plus(
-        sentence,
-        add_special_tokens=True,
-        max_length=max_length,
-        padding='max_length',
-        return_attention_mask=True,
-        return_tensors='pt',
-    ) for sentence in sentences]
+    # Convert the sentences to BERT-compatible input format
+    input_ids = []
+    attention_masks = []
+    for sentence in sentences:
+        # Encode the sentence
+        encoded_dict = tokenizer.encode_plus(
+            sentence,
+            add_special_tokens=True,
+            max_length=max_length + 2,
+            padding='max_length',
+            return_attention_mask=True,
+            return_tensors='pt',
+        )
 
-    # Extract the input IDs and attention masks from the encoded dictionaries
-    input_ids = torch.cat([encoded_dict['input_ids'] for encoded_dict in encoded_dicts], dim=0)
-    attention_masks = torch.cat([encoded_dict['attention_mask'] for encoded_dict in encoded_dicts], dim=0)
+        # Add the encoded sentence to the list
+        input_ids.append(encoded_dict['input_ids'])
+        attention_masks.append(encoded_dict['attention_mask'])
+
+    # Convert the lists to tensors
+    input_ids = torch.cat(input_ids, dim=0)
+    attention_masks = torch.cat(attention_masks, dim=0)
 
     return input_ids, attention_masks
 
@@ -144,36 +157,53 @@ def embed_categorical_variables(X, model, tokenizer, sentence_strategy="value_an
     X_high_cardinality = X[high_cardinality_columns]
 
     # Get the low cardinality and non-categorical categorical columns
-    X_non_categorical = X.drop(high_cardinality_columns, axis=1)
+    other_variables_columns = [col for col in X.columns if col not in high_cardinality_columns]
+    X_other_variables = X[other_variables_columns]
+    X_other_variables = X_other_variables.reset_index(drop=True)
 
     # Create a list of sentences for each row
     sentences = create_sentence_list_from_high_cardinality_columns(X_high_cardinality, strategy=sentence_strategy)
 
     # Convert sentences to input IDs and attention masks
     max_length = max(len(s) for s in sentences)
+    print(max_length)
     input_ids, attention_masks = convert_sentences_to_bert_input(sentences, tokenizer, max_length)
 
-    # Pass the inputs through the model to obtain the representation vectors
-    with torch.no_grad():
-        outputs = model(input_ids, attention_mask=attention_masks)
-    
+    if len(X) > 50000:
+        batch_size = 256  # Define the batch size
+        n_samples = len(input_ids)
+        outputs = []
+        with torch.no_grad():
+            for i in tqdm(range(0, n_samples, batch_size)):
+                # Get a batch of inputs and pass them through the model
+                batch_input_ids = input_ids[i:i+batch_size]
+                batch_attention_masks = attention_masks[i:i+batch_size]
+                batch_outputs = model(batch_input_ids, attention_mask=batch_attention_masks)
+                outputs.append(batch_outputs)
+        outputs = torch.cat(outputs, dim=0)  # Concatenate the outputs from all batches
+
+    else:
+        # Pass the inputs through the model to obtain the representation vectors
+        with torch.no_grad():
+            outputs = model(input_ids, attention_mask=attention_masks)
+        
     hidden_states = outputs[2]
 
     # Create the embeddings
     if embedding_strategy == "last_hidden_state":
-        categorical_variables_emebeddings = hidden_states[-1][:, 0, :]
+        categorical_variables_embeddings = hidden_states[-1][:, 0, :]
     elif embedding_strategy == "last_four_hidden_state_concatenate":
-        categorical_variables_emebeddings = torch.cat((hidden_states[-1][:, 0, :], hidden_states[-2][:, 0, :], hidden_states[-3][:, 0, :], hidden_states[-4][:, 0, :]), dim=1)
+        categorical_variables_embeddings = torch.cat((hidden_states[-1][:, 0, :], hidden_states[-2][:, 0, :], hidden_states[-3][:, 0, :], hidden_states[-4][:, 0, :]), dim=1)
     else:
         raise ValueError("Invalid embedding strategy specified.")
 
     # Create column names for the embeddings
-    n_components = len(cat_vec[0])
+    n_components = len(categorical_variables_embeddings[0])
     col_names = [f"embedding_{i+1}" for i in range(n_components)]
-    df_bert_embeddings = pd.DataFrame(data=categorical_variables_emebeddings, columns=col_names)
+    df_bert_embeddings = pd.DataFrame(data=categorical_variables_embeddings, columns=col_names)
 
     # Concatenate the embeddings with the low cardinality columns
-    X_transformed = pd.concat([X_non_categorical, df_bert_embeddings], axis=1)
+    X_transformed = pd.concat([X_other_variables, df_bert_embeddings], axis=1, ignore_index=True)
 
     return X_transformed
 
@@ -195,30 +225,42 @@ def run_model_using_bert_embeddings(all_datasets, sentence_strategy="value_and_c
         each dataset.
 
     """
-    
+
+    strategy = sentence_strategy + "_" + embedding_strategy
+    strategy = strategy.replace("_", " ")
+    strategy = "BERT encoding : " + strategy
+
     results = []
     model, tokenizer = initialize_bert()
 
     for dataset_name, dataset in all_datasets.items():
+        start = time.time()
         X = dataset.X
         y = dataset.y
-
+        print(len(y))
         target_type = y.dtype.name
         pipeline = get_pipeline(target_type)
         scoring = get_scoring(target_type)
 
-        X = embed_categorical_variables(X, model, tokenizer, sentence_strategy, embedding_strategy)
+        print(dataset_name)        
 
-        TOKENIZERS_PARALLELISM = False 
+        X_with_embedded_columns = embed_categorical_variables(X, model, tokenizer, sentence_strategy, embedding_strategy)
 
-        print(dataset_name)
+        print("embedding done")
+        
+        # TOKENIZERS_PARALLELISM = "false"
 
-        scores = cross_val_score(pipeline, X, y, scoring=scoring, n_jobs=-1)
+        scores = cross_val_score(pipeline, X_with_embedded_columns, y, scoring=scoring, n_jobs=-1)
+        print(np.mean(scores))
+        end = time.time()
+        time_delta = datetime.timedelta(seconds = end-start)
 
         result = pd.DataFrame({
             'dataset_name': [dataset_name],
+            "strategy" : [strategy],
             'mean_score': [scores.mean()],
-            'std_score': [scores.std()]
+            'std_score': [scores.std()],
+            "compute_time" : [time_delta]
         })
         results.append(result)
 
