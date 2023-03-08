@@ -1,4 +1,3 @@
-from dirty_cat import datasets
 import pandas as pd
 
 from functions.utils import save_scores_to_csv
@@ -8,10 +7,8 @@ from functions.bert_encoder import run_model_using_bert_embeddings
 
 
 all_datasets = load_datasets()
-# small_datasets = {"colleges" : fetch_colleges()}
 
 baseline_results_df = run_baseline_model(all_datasets)
-save_scores_to_csv(baseline_results_df, "baseline_results.csv")
 
 results_using_bert_embeddings_df1 = run_model_using_bert_embeddings(all_datasets, 
                                                                         sentence_strategy="only_value", 
