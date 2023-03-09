@@ -17,4 +17,4 @@ The 'main.py' file allows running all models to compare the performance of:
     *Embeddings extracted from BERT using both the values and column names of high-cardinality categorical variables to replace the high-cardinality categorical data, using the concatenation of the last four hidden states of BERT.
 The categorical data is given in the form of sentences as inputs to BERT.
 
-The results can be found in a CSV file located in [result.csv](./result/results.csv).
+The results can be found in a CSV file located in [result.csv](categorical-embedding-with-LLMs/results/results.csv).
