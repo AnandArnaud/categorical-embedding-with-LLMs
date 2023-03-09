@@ -16,4 +16,4 @@ Code Structure:
         Embeddings extracted from BERT using both the values and column names of high-cardinality categorical variables to replace the high-cardinality categorical data, but only using the last_hidden_state of BERT
         Embeddings extracted from BERT using both the values and column names of high-cardinality categorical variables to replace the high-cardinality categorical data, using the concatenation of the last four hidden states of BERT.
     The categorical data is given in the form of phrases as inputs to BERT.
-    The results can be found in a CSV file located in the 'result' folder.
+    The results can be found in a CSV file located in [result.csv](./result/resultats.csv).
