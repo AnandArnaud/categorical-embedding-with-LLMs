@@ -1,4 +1,4 @@
-# Categorical Variables Embedding with LLMs
+# Categorical Variables Embedding using LLMs
 
 This project aims to extract a representation vector of high-cardinality categorical data using Large Language Models (LLMs) such as BERT. We will compare our results with the baseline performance of TableVectorizer from dirty-cat.
 
