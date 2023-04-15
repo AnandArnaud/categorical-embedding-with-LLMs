@@ -74,6 +74,20 @@ def fetch_vancouver_employee():
     return vancouver_employee
 
 
+def fetch_adult():
+    # Charger les données
+    df = pd.read_csv("/home/soda/apajanir/categorical_embedding_with_LLMs/datasets/adult.txt", delimiter=", ")
+    df = df.dropna(subset=["Income"])
+    # Supprimer la colonne target du DataFrame pour obtenir les features
+    X = df.drop(columns=["Income"])
+    # Sélectionner uniquement la colonne target pour obtenir y
+    y = df.loc[:, "Income"]
+    # Créer l'objet CustomDataset
+    adult = CustomDataset(X, y)
+    return adult
+
+
+
 def load_datasets():
     all_datasets = {}
     for func_name in dir(datasets):
