@@ -8,7 +8,7 @@ from sklearn.model_selection import cross_val_score
 from functions.utils import get_pipeline, get_scoring
 
 
-def run_baseline_model(dataset):
+def run_baseline_model(dataset, dataset_name):
 
     start = time.time()
     X = dataset.X
@@ -27,7 +27,7 @@ def run_baseline_model(dataset):
 
     result = pd.DataFrame({
         'dataset_name': [dataset_name],
-        "strategy" : ["SuperVectorizer"],
+        "strategy" : ["TableVectorizer"],
         'mean_score': [np.mean(scores)],
         'std_score': [np.std(scores)],
         "compute_time" : [time_delta]
