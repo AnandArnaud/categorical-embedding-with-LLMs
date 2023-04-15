@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+import torch
 
 from dirty_cat import datasets, TableVectorizer
 from sklearn.pipeline import make_pipeline
@@ -27,6 +28,12 @@ def get_scoring(target_type):
         return 'accuracy'
     else:
         raise ValueError("Unknown target type")
+
+
+def embedding_to_pt(embedding, file_name):
+    results_dir = 'embeddings'
+    file_path = os.path.join(results_dir, file_name)
+    torch.save(embedding, file_path)
 
 
 def save_scores_to_csv(df, file_name):
