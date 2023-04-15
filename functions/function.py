@@ -87,7 +87,7 @@ def create_sentence_list_from_high_cardinality_columns(X, strategy='val_and_col'
 
     elif strategy == "val_col_sep":        
     # Create a list of sentences for each row with both the column names and values of the high cardinality columns
-        sentences = [' '.join([f"{col} is {val}." for col, val in zip(high_cardinality_columns, row)]) for row in X[high_cardinality_columns].values]
+        sentences = [' '.join([f"{col} is {val}" for col, val in zip(high_cardinality_columns, row)]) for row in X[high_cardinality_columns].values]
        
     else:
         raise ValueError("Invalid strategy specified. Valid options are 'only_value' and 'value_and_column'.")
