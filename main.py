@@ -1,37 +1,60 @@
 import pandas as pd
+import gc
 
 from functions.utils import save_scores_to_csv
-from functions.data_loader import load_datasets, fetch_colleges
+from functions.data_loader import load_datasets
 from functions.SuperVectorizer_baseline import run_baseline_model
-from functions.bert_encoder import run_model_using_bert_embeddings
+from functions.function import run_model, extract_embeddings
 
 
 all_datasets = load_datasets()
 
-baseline_results_df = run_baseline_model(all_datasets)
+for dataset_name, dataset in all_datasets.items():
+    
+    baseline_results_df = run_baseline_model(dataset, dataset_name)
+    save_scores_to_csv(baseline_results_df, "result.csv")
 
-results_using_bert_embeddings_df1 = run_model_using_bert_embeddings(all_datasets, 
-                                                                        sentence_strategy="only_value", 
-                                                                        embedding_strategy="last_four_hidden_state_concatenate"
-                                                                    )
+    delete(baseline_results_df)
+    gc.collect()
 
-results_using_bert_embeddings_df2 = run_model_using_bert_embeddings(all_datasets, 
-                                                                        sentence_strategy="value_and_column", 
-                                                                        embedding_strategy="last_four_hidden_state_concatenate"
-                                                                    )
+    embeddings = extract_embeddings("val", "last", dataset_name)
+    result = run_model(dataset, dataset_name, embeddings, "val")
+    save_scores_to_csv(result, "result.csv")
 
-results_using_bert_embeddings_df3 = run_model_using_bert_embeddings(all_datasets, 
-                                                                        sentence_strategy="value_and_column", 
-                                                                        embedding_strategy="last_hidden_state"
-                                                                    )
+    delete(result)
+    gc.collect()
 
-all_results_df = pd.concat([baseline_results_df,
-                            results_using_bert_embeddings_df1,
-                            results_using_bert_embeddings_df2,
-                            results_using_bert_embeddings_df3
-                            ],
-                            axis = 0)
+    embeddings = extract_embeddings("val", "last_four", dataset_name)
+    result = run_model(dataset, dataset_name, embeddings, "val")
+    save_scores_to_csv(result, "result.csv")
 
-all_results_df = all_results_df.sort_values(["dataset_name", "strategy"])
+    delete(result)
+    gc.collect()
 
-save_scores_to_csv(all_results_df, "results.csv")
+    embeddings = extract_embeddings("val_col", "last", dataset_name)
+    result = run_model(dataset, dataset_name, embeddings, "val_col")
+    save_scores_to_csv(result, "result.csv")
+
+    delete(result)
+    gc.collect()
+
+    embeddings = extract_embeddings("val_col", "last_four", dataset_name)
+    result = run_model(dataset, dataset_name, embeddings, "val_col")
+    save_scores_to_csv(result, "result.csv")
+
+    delete(result)
+    gc.collect()
+
+    embeddings = extract_embeddings("val_col_sep", "last", dataset_name)
+    result = run_model(dataset, dataset_name, embeddings, "val_col_sep")
+    save_scores_to_csv(result, "result.csv")
+
+    delete(result)
+    gc.collect()
+
+    embeddings = extract_embeddings("val_col_sep", "last_four", dataset_name)
+    result = run_model(dataset, dataset_name, embeddings, "val_col_sep")
+    save_scores_to_csv(result, "result.csv")
+
+    delete(result)
+    gc.collect()
