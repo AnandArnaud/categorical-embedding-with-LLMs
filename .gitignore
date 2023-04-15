@@ -1,2 +1,4 @@
 jupyter_notebook/
 functions/__pycache__/
+datasets/
+embeddings/

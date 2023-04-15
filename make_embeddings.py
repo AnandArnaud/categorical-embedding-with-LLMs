@@ -5,8 +5,8 @@ import torch
 import time
 import csv
 
-from functions.fct import initialize_bert
-from functions.fct import get_embeddings
+from functions.function import initialize_bert
+from functions.function import get_embeddings
 from functions.utils import embedding_to_pt
 from functions.data_loader import load_datasets
 
