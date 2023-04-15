@@ -87,6 +87,31 @@ def fetch_adult():
     return adult
 
 
+def fetch_california_housing():
+    # Charger les données
+    df = pd.read_csv("/home/soda/apajanir/categorical_embedding_with_LLMs/datasets/california_housing.csv", delimiter=",")
+    df = df.dropna(subset=["median_house_value"])
+    # Supprimer la colonne target du DataFrame pour obtenir les features
+    X = df.drop(columns=["median_house_value"])
+    # Sélectionner uniquement la colonne target pour obtenir y
+    y = df.loc[:, "median_house_value"]
+    # Créer l'objet CustomDataset
+    california_housing = CustomDataset(X, y)
+    return california_housing
+
+
+def fetch_house_sales():
+    # Charger les données
+    df = pd.read_csv("/home/soda/apajanir/categorical_embedding_with_LLMs/datasets/house_sales.csv", delimiter=",")
+    df = df.dropna(subset=["price"])
+    # Supprimer la colonne target du DataFrame pour obtenir les features
+    X = df.drop(columns=["price"])
+    # Sélectionner uniquement la colonne target pour obtenir y
+    y = df.loc[:, "price"]
+    # Créer l'objet CustomDataset
+    house_sales = CustomDataset(X, y)
+    return house_sales
+
 
 def load_datasets():
     all_datasets = {}
@@ -106,3 +131,5 @@ def load_datasets():
             all_datasets[dataset_name] = dataset
     print(f"Total dataset loaded: {len(all_datasets)}")
     return all_datasets
+
+load_datasets()
