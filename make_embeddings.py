@@ -10,12 +10,15 @@ from functions.function import get_embeddings
 from functions.utils import embedding_to_pt
 from functions.data_loader import load_datasets
 
-all_datasets = load_datasets()
+# all_datasets = load_datasets()
+small_datasets = {'open_payments' : datasets.fetch_open_payments()}
 
 model, tokenizer = initialize_bert()
 
-for dataset_name, dataset in all_datasets.items():
+for dataset_name, dataset in small_datasets.items():
+    print(dataset_name)
     X = dataset.X
+
     start = time.time()
     embedding_1 = get_embeddings(X, model, tokenizer, "val")
     file_name = dataset_name + "_val" + "_embeddings.pt"
