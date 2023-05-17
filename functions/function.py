@@ -9,11 +9,10 @@ import gc
 
 from tqdm import tqdm
 from transformers import BertConfig, BertModel, AutoTokenizer
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_validate, RepeatedKFold
+from functions.utils import get_pipeline, get_scoring, transform_dict
 
-from functions.utils import get_pipeline, get_scoring
-
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
+# os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
 def initialize_bert(model_name="bert-base-uncased"):
@@ -160,57 +159,57 @@ def get_embeddings(X, model, tokenizer, sentence_strategy):
     print(max_length)
     input_ids, attention_masks = convert_sentences_to_bert_input(sentences, tokenizer, max_length)
 
-    if len(X) > 100000:
-        batch_size = 1  # Define the batch size
-        n_samples = len(input_ids)
-        last = []
-        with torch.no_grad():
-            for i in tqdm(range(0, n_samples, batch_size)):
-                # Get a batch of inputs and pass them through the model
-                batch_input_ids = input_ids[i:i+batch_size]
-                batch_attention_masks = attention_masks[i:i+batch_size]
-                batch_outputs = model(batch_input_ids, attention_mask=batch_attention_masks)[2][-1][:,0,:]
-                last.append(batch_outputs)
-                del(batch_input_ids)
-                del(batch_attention_masks)
-                del(batch_outputs)
-                gc.collect()
+    # if len(X) > 100000:
+    #     batch_size = 1  # Define the batch size
+    #     n_samples = len(input_ids)
+    #     last = []
+    #     with torch.no_grad():
+    #         for i in tqdm(range(0, n_samples, batch_size)):
+    #             # Get a batch of inputs and pass them through the model
+    #             batch_input_ids = input_ids[i:i+batch_size]
+    #             batch_attention_masks = attention_masks[i:i+batch_size]
+    #             batch_outputs = model(batch_input_ids, attention_mask=batch_attention_masks)[2][-1][:,0,:]
+    #             last.append(batch_outputs)
+    #             del(batch_input_ids)
+    #             del(batch_attention_masks)
+    #             del(batch_outputs)
+    #             gc.collect()
         
-        categorical_variables_embeddings = torch.cat(last, dim=1)       
+    #     categorical_variables_embeddings = torch.cat(last, dim=1)       
     
-    elif len(X) > 50000:
-        batch_size = 2  # Define the batch size
-        n_samples = len(input_ids)
-        last = []
-        lastt = []
-        lasttt = []
-        lastttt = []
-        with torch.no_grad():
-            for i in tqdm(range(0, n_samples, batch_size)):
-                # Get a batch of inputs and pass them through the model
-                batch_input_ids = input_ids[i:i+batch_size]
-                batch_attention_masks = attention_masks[i:i+batch_size]
-                batch_outputs = model(batch_input_ids, attention_mask=batch_attention_masks)[2][-1:-5:-1]
-                last.append(batch_outputs[0][:,0,:])
-                lastt.append(batch_outputs[1][:,0,:])
-                lasttt.append(batch_outputs[2][:,0,:])
-                lastttt.append(batch_outputs[3][:,0,:])
-                del(batch_input_ids)
-                del(batch_attention_masks)
-                del(batch_outputs)
-                gc.collect()
+    # elif len(X) > 50000:
+    batch_size = 1  # Define the batch size
+    n_samples = len(input_ids)
+    last = []
+    lastt = []
+    lasttt = []
+    lastttt = []
+    with torch.no_grad():
+        for i in tqdm(range(0, n_samples, batch_size)):
+            # Get a batch of inputs and pass them through the model
+            batch_input_ids = input_ids[i:i+batch_size]
+            batch_attention_masks = attention_masks[i:i+batch_size]
+            batch_outputs = model(batch_input_ids, attention_mask=batch_attention_masks)[2][-1:-5:-1]
+            last.append(batch_outputs[0][:,0,:])
+            lastt.append(batch_outputs[1][:,0,:])
+            lasttt.append(batch_outputs[2][:,0,:])
+            lastttt.append(batch_outputs[3][:,0,:])
+            del(batch_input_ids)
+            del(batch_attention_masks)
+            del(batch_outputs)
+            gc.collect()
 
-        last = torch.cat(last, dim=0)
-        lastt = torch.cat(lastt, dim=0)
-        lasttt = torch.cat(lasttt, dim=0)
-        lastttt = torch.cat(lastttt, dim=0)
-        categorical_variables_embeddings = torch.cat((last, lastt, lasttt, lastttt), dim=1)
-    
-    else:
-        # Pass the inputs through the model to obtain the representation vectors
-        with torch.no_grad():
-            categorical_variables_embeddings = model(input_ids, attention_mask=attention_masks)[2][-1:-5:-1]
-        categorical_variables_embeddings = torch.cat((categorical_variables_embeddings[0][:,0,:], categorical_variables_embeddings[1][:,0,:], categorical_variables_embeddings[2][:,0,:], categorical_variables_embeddings[3][:,0,:]), dim=1)
+    last = torch.cat(last, dim=0)
+    lastt = torch.cat(lastt, dim=0)
+    lasttt = torch.cat(lasttt, dim=0)
+    lastttt = torch.cat(lastttt, dim=0)
+    categorical_variables_embeddings = torch.cat((last, lastt, lasttt, lastttt), dim=1)
+
+    # else:
+    #     # Pass the inputs through the model to obtain the representation vectors
+    #     with torch.no_grad():
+    #         categorical_variables_embeddings = model(input_ids, attention_mask=attention_masks)[2][-1:-5:-1]
+    #     categorical_variables_embeddings = torch.cat((categorical_variables_embeddings[0][:,0,:], categorical_variables_embeddings[1][:,0,:], categorical_variables_embeddings[2][:,0,:], categorical_variables_embeddings[3][:,0,:]), dim=1)
 
     return categorical_variables_embeddings
 
@@ -247,9 +246,8 @@ def run_model(dataset, dataset_name, embeddings, sentence_strategy):
     X = dataset.X
     y = dataset.y
 
-    target_type = y.dtype.name
-    pipeline = get_pipeline(target_type)
-    scoring = get_scoring(target_type)
+    pipeline = get_pipeline(y)
+    scoring = get_scoring(y)
 
     # Get the high cardinality categorical columns
     high_cardinality_columns = get_high_cardinality_categorical_columns(X)
@@ -264,17 +262,21 @@ def run_model(dataset, dataset_name, embeddings, sentence_strategy):
 
     start = time.time()
     print("running...")
-    scores = cross_val_score(pipeline, X, y, scoring=scoring, n_jobs=-1)
-    print(np.mean(scores))
+    cv = RepeatedKFold(n_splits=5, n_repeats=10)
+    cv_results = cross_validate(pipeline, X, y, scoring=scoring, return_train_score=True, n_jobs=-1, cv=cv)
     end = time.time()
     time_delta = datetime.timedelta(seconds = end-start)
-
+   
     result = pd.DataFrame({
         'dataset_name': [dataset_name],
         "strategy" : [strategy],
-        'mean_score': [scores.mean()],
-        'std_score': [scores.std()],
         "compute_time" : [time_delta]
     })
 
-    return result
+    cv_results = transform_dict(cv_results)
+
+    cv_results = pd.DataFrame.from_dict(cv_results)
+
+    final_df = pd.concat([result, cv_results], axis=1)
+
+    return final_df

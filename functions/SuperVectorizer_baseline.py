@@ -3,9 +3,9 @@ import numpy as np
 import time
 import datetime
 
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_validate
 
-from functions.utils import get_pipeline, get_scoring
+from functions.utils import get_pipeline, get_scoring, transform_dict
 
 
 def run_baseline_model(dataset, dataset_name):
@@ -14,23 +14,24 @@ def run_baseline_model(dataset, dataset_name):
     X = dataset.X
     y = dataset.y
 
-    target_type = y.dtype.name
-    pipeline = get_pipeline(target_type)
-    scoring = get_scoring(target_type)
+    pipeline = get_pipeline(y)
+    scoring = get_scoring(y)
 
     print(dataset_name)
 
-    scores = cross_val_score(pipeline, X, y, scoring=scoring, n_jobs=-1)
-    print(np.mean(scores))
+    cv_results = cross_validate(pipeline, X, y, scoring=scoring, return_train_score=True, n_jobs=-1)
     end = time.time()
     time_delta = datetime.timedelta(seconds = end-start)
 
-    result = pd.DataFrame({
-        'dataset_name': [dataset_name],
-        "strategy" : ["TableVectorizer"],
-        'mean_score': [np.mean(scores)],
-        'std_score': [np.std(scores)],
-        "compute_time" : [time_delta]
-    })
+    cv_results = transform_dict(cv_results)
 
-    return result 
+    result = pd.DataFrame({
+    'dataset_name': [dataset_name],
+    "strategy" : ["TableVectorizer"],
+    "compute_time" : [time_delta]})
+
+    cv_results = pd.DataFrame.from_dict(cv_results)
+
+    final_df = pd.concat([result, cv_results], axis=1)
+
+    return final_df

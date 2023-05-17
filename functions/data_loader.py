@@ -3,6 +3,7 @@ import requests
 import sys
 
 from dirty_cat import datasets
+from sklearn.model_selection import train_test_split
 
 
 class CustomDataset:
@@ -87,19 +88,6 @@ def fetch_adult():
     return adult
 
 
-def fetch_california_housing():
-    # Charger les données
-    df = pd.read_csv("/home/soda/apajanir/categorical_embedding_with_LLMs/datasets/california_housing.csv", delimiter=",")
-    df = df.dropna(subset=["median_house_value"])
-    # Supprimer la colonne target du DataFrame pour obtenir les features
-    X = df.drop(columns=["median_house_value"])
-    # Sélectionner uniquement la colonne target pour obtenir y
-    y = df.loc[:, "median_house_value"]
-    # Créer l'objet CustomDataset
-    california_housing = CustomDataset(X, y)
-    return california_housing
-
-
 def fetch_house_sales():
     # Charger les données
     df = pd.read_csv("/home/soda/apajanir/categorical_embedding_with_LLMs/datasets/house_sales.csv", delimiter=",")
@@ -111,6 +99,47 @@ def fetch_house_sales():
     # Créer l'objet CustomDataset
     house_sales = CustomDataset(X, y)
     return house_sales
+
+
+def fetch_kickstarter_projects():
+    df = pd.read_csv("/home/soda/apajanir/categorical_embedding_with_LLMs/datasets/kickstarter_projects.csv", encoding='latin1', delimiter=",")
+    df = df.dropna(subset=["state "])
+    # Supprimer la colonne target du DataFrame pour obtenir les features
+    valid_categories = ["successful", "canceled", "live", "undefined", "suspended", 'failed']
+    df = df[df['state '].isin(valid_categories)]
+    X1 = df.drop(columns=["state "])
+    # Sélectionner uniquement la colonne target pour obtenir y
+    y1 = df.loc[:, "state "]
+    X, _, y, _ = train_test_split(X1, y1, train_size= 30000, stratify=y1, random_state=0)
+    # Créer l'objet CustomDataset
+    kickstarter_projects = CustomDataset(X, y)
+    return kickstarter_projects
+
+
+def fetch_met_objects():
+    df = pd.read_csv("/home/soda/apajanir/categorical_embedding_with_LLMs/datasets/MetObjects.csv", delimiter=",")
+    df = df.drop(["Artist Wikidata URL", "Artist ULAN URL", "Link Resource", 'Tags', 'Tags AAT URL', 'Link Resource', 'Object Wikidata URL', 'Tags Wikidata URL'], axis=1)
+    df = df.dropna(subset=["Department"])
+    # Supprimer la colonne target du DataFrame pour obtenir les features
+    X1 = df.drop(columns=["Department"])
+    # Sélectionner uniquement la colonne target pour obtenir y
+    y1 = df.loc[:, "Department"]
+    X, _, y, _ = train_test_split(X1, y1, train_size= 30000, stratify=y1, random_state=0)
+    met_objects = CustomDataset(X, y)
+    return met_objects
+
+
+def fetch_public_procurement():
+    df = pd.read_csv("/home/soda/apajanir/categorical_embedding_with_LLMs/datasets/public_procurement.csv", delimiter=",")
+    df = df.drop(['AWARD_EST_VALUE_EURO', 'AWARD_VALUE_EURO_FIN_1', 'TED_NOTICE_URL', 'VALUE_EURO', 'VALUE_EURO_FIN_1', 'VALUE_EURO_FIN_2'], axis=1)
+    df = df.dropna(subset=["AWARD_VALUE_EURO"])
+    # Supprimer la colonne target du DataFrame pour obtenir les features
+    X1 = df.drop(columns=["AWARD_VALUE_EURO"])
+    # Sélectionner uniquement la colonne target pour obtenir y
+    y1 = df.loc[:, "AWARD_VALUE_EURO"]
+    X, _, y, _ = train_test_split(X1, y1, train_size= 30000, random_state=0)
+    public_procurement = CustomDataset(X, y)
+    return public_procurement
 
 
 def load_datasets():
@@ -131,5 +160,3 @@ def load_datasets():
             all_datasets[dataset_name] = dataset
     print(f"Total dataset loaded: {len(all_datasets)}")
     return all_datasets
-
-load_datasets()

@@ -7,7 +7,8 @@ from sklearn.pipeline import make_pipeline
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.ensemble import HistGradientBoostingRegressor
 
-def get_pipeline(target_type):
+def get_pipeline(y):
+    target_type = y.dtype.name
     if target_type == 'object':
         pipeline = make_pipeline(
             TableVectorizer(auto_cast=True),
@@ -21,11 +22,15 @@ def get_pipeline(target_type):
     return pipeline
 
 
-def get_scoring(target_type):
+def get_scoring(y):
+    target_type = y.dtype.name
     if 'float' in target_type or 'int' in target_type:
-        return 'r2'
+        return ['r2', "neg_mean_squared_error", 'neg_mean_absolute_error']
     elif 'object' in target_type:
-        return 'accuracy'
+        if y.nunique()>2:
+            return ['accuracy', 'roc_auc_ovr', 'f1_weighted']
+        else:
+            return ['accuracy', 'roc_auc', 'f1']
     else:
         raise ValueError("Unknown target type")
 
@@ -48,4 +53,14 @@ def save_scores_to_csv(df, file_name):
     if not os.path.isfile(file_path):
         df.to_csv(file_path, header=True, index=False)
     else:
-        df.to_csv(file_path, mode='w', header=True, index=False)
+        df.to_csv(file_path, mode='a', header=False, index=False)
+
+
+def transform_dict(d):
+    new_dict = {}
+    for key, value in d.items():
+        if key.startswith('test') or key.startswith('fit') or key.startswith("score"):
+            for i in range(1, len(value) + 1):
+                new_key = f"{key}_{i}"
+                new_dict[new_key] = [value[i-1]]
+    return new_dict
